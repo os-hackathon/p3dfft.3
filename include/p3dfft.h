@@ -121,6 +121,56 @@ const int DEF_FFT_FLAGS=0;
 #define LocDevice 1
 #define LocHost 2
 
+#elif __HIP_ROCclr__
+
+#include <hip_runtime.h>
+#include <hip_blas.h>
+
+#define cudaStream_t hipStream_t
+#define cudaEvent_t hipEvent_t
+//#define cudaDataType_t hipDataType_t
+#define cudaMalloc hipMalloc
+#define cudaEventRecord hipEventRecord
+#define cudaMallocHost hipMallocHost
+#define cudaMemcpy hipMemcpy
+#define cudaMemcpyAsync hipMemcpyAsync
+#define cudaFree hipFree
+#define cudaFreeHost hipFreeHost
+#define cudaEventSynchronize hipEventSynchronize
+#define cudaDeviceSynchronize hipDeviceSynchronize
+#define cudaMemcpyHostToDevice hipMemcpyHostToDevice
+#define cudaMemcpyDeviceToHost hipMemcpyDeviceToHost
+
+// CUFFT -> HIPFFT
+#define cufftType hipfftType
+#define cufftDestroy hipfftDestroy
+#define cufftPlanMany hipfftPlanMany
+#define cufftExecR2C hipfftExecR2C
+#define cufftExecD2Z hipfftExecD2Z
+#define cufftExecC2R hipfftExecC2R
+#define cufftExecZ2D hipfftExecZ2D
+#define cufftExecC2C hipfftExecC2C
+#define cufftExecZ2Z hipfftExecZ2Z
+#define cufftReal hipfftReal
+#define cufftComplex hipfftComplex
+#define cufftDoubleReal hipfftDoubleReal
+#define cufftDoubleComplex hipfftDoubleComplex
+#define cufftSetStream hipfftSetStream
+
+// CUBLAS -> HIPBLAS
+#define cublasHandle_t hipblasHandle_t
+#define cublasOperation_t hipblasOperation_t
+#define CUBLAS_OP_T HIPBLAS_OP_T
+#define CUBLAS_OP_N HIPBLAS_OP_N
+#define cublasStatus_t hipblasStatus_t
+#define cublasSgeam hipblasSgeam
+#define cublasDgeam hipblasDgeam
+#define cublasCgeam hipblasCgeam
+#define cublasZgeam hipblasZgeam
+#define cuComplex hipComplex
+#define cuDoubleComplex hipDoubleComplex
+
+
 #endif
 
 #define NONE 0
