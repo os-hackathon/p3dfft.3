@@ -110,6 +110,7 @@ const int DEF_FFT_FLAGS=FFTW_PATIENT;
 #include <helper_cuda.h>
 #include <helper_functions.h>
 #include <device_launch_parameters.h>
+#include <cuComplex.h>
 #include <curand_mtgp32_kernel.h>
 #ifdef CUTENSOR
 #include <cutensor.h>
@@ -123,8 +124,9 @@ const int DEF_FFT_FLAGS=0;
 
 #elif __HIP_ROCclr__
 
-#include <hip_runtime.h>
+#include <hip/hip_runtime.h>
 #include <hip_blas.h>
+#include <hipComplex.h>
 
 #define cudaStream_t hipStream_t
 #define cudaEvent_t hipEvent_t
