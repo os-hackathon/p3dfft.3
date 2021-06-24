@@ -204,6 +204,10 @@ template <class T> void ro_cutt_out(T *in,T *out,int imc[3],int din[3])
   cuttExecute(plan, in, out);
   cuttDestroy(plan);
 }
+#else
+
+#define bSize 10
+
 #endif
 
 #ifdef CUBLAS
@@ -256,6 +260,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot102in_cublas(
 template <class Type1,class Type2> void transplan<Type1,Type2>::rot102in_slice(Type1 *in,Type2 *out,bool inplace,int d1[3],int d2[3],void (*exec)(...),  Plantype<Type1,Type2> *plan,int slice,int nslices,bool deriv)
 {
 
+
     Type2 *tmp;
 
 #if defined CUDA && !defined CUBLAS  
@@ -278,9 +283,22 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot102in_slice(T
 #elif defined CUTT
 	ro_cutt_in<Type2>(tmp,out+offset2[slice],imc,d2,slice,nslices,streams[slice]);
 #else // do our own CUDA transpose
-    dim3 gridDim=((d2[1]+1)/TILE_DIM,(d2[0]+1)/TILE_DIM);
-    dim3 blockSize=(TILE_DIM,TILE_DIM);
-    ro102in_cu<Type2>(gridDim,blockSize,tmp,out+offset2[slice],inplace,d1,d2,slice,nslices,streams[slice]);
+	//    dim3 gridDim=((d2[1]+1)/TILE_DIM,(d2[0]+1)/TILE_DIM);
+	//dim3 blockSize=(TILE_DIM,TILE_DIM);
+	dim3 blockSize = (bSize,bSize,bSize);
+	int nB[3];
+	for(i=0;i<3;i++)
+	  nB[i] = ceil(d2[i]/bSize);
+	dim3 gridDim =(nB[0],nB[1],nB[2]);
+	if(type_id(Type2) == type_float)
+	  transpose_102_fr<<<gridDim,blockSize,0,streams[slice]>>>(tmp, out+offset2[slice], d2[0],d2[1],d2[2]);
+	if(type_id(Type2) == type_double)
+	  transpose_102_dr<<<gridDim,blockSize,0,streams[slice]>>>(tmp, out+offset2[slice], d2[0],d2[1],d2[2]);
+	if(type_id(Type2) == type_complex)
+	  transpose_102_fc<<<gridDim,blockSize,0,streams[slice]>>>(tmp, out+offset2[slice], d2[0],d2[1],d2[2]);
+	if(type_id(Type2) == type_complex_double)
+	  transpose_102_dc<<<gridDim,blockSize,0,streams[slice]>>>(tmp, out+offset2[slice], d2[0],d2[1],d2[2]);
+  //    ro102in_cu<Type2>(gridDim,blockSize,tmp,out+offset2[slice],inplace,d1,d2,slice,nslices,streams[slice]);
 //    rot102in_cu<<<gridDim,blockSize>>>(in,out,inplace,d1,d2,exec,plan,slice,nslice,streams[slice]);
 #endif
     if(!is_empty)
@@ -387,10 +405,23 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot120in(Type1 *
 #elif defined CUTT
   ro_cutt_in<Type2>(tmp,out+k,imc,d2);
 #else // do our own CUDA transpose
-    dim3 gridDim=((d2[1]+1)/TILE_DIM,(d2[0]+1)/TILE_DIM);
+	dim3 blockSize = (bSize,bSize,bSize);
+	int nB[3];
+	for(i=0;i<3;i++)
+	  nB[i] = ceil(d2[i]/bSize);
+	dim3 gridDim =(nB[0],nB[1],nB[2]);
+	if(type_id(Type2) == type_float)
+	  transpose_201_fr<<<gridDim,blockSize,0>>>(tmp, out, d2[0],d2[1],d2[2]);
+	if(type_id(Type2) == type_double)
+	  transpose_201_dr<<<gridDim,blockSize,0>>>(tmp, out, d2[0],d2[1],d2[2]);
+	if(type_id(Type2) == type_complex)
+	  transpose_201_fc<<<gridDim,blockSize,0>>>(tmp, out, d2[0],d2[1],d2[2]);
+	if(type_id(Type2) == type_complex_double)
+	  transpose_201_dc<<<gridDim,blockSize,0>>>(tmp, out, d2[0],d2[1],d2[2]);
+	/*    dim3 gridDim=((d2[1]+1)/TILE_DIM,(d2[0]+1)/TILE_DIM);
     dim3 blockSize=(TILE_DIM,TILE_DIM);
     ro120in_cu<Type2>(gridDim,blockSize,tmp,out,d2);
-    ro120in_cu(gridDim,blockSize,tmp,out,d2);
+    ro120in_cu(gridDim,blockSize,tmp,out,d2);*/
 #endif
 
   if(!is_empty) 
@@ -507,10 +538,23 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot210in(Type1 *
 #elif defined CUTT
   ro_cutt_in<Type2>(tmp,out,imc,d2);
 #else // do our own CUDA transpose
-    dim3 gridDim=((d2[1]+1)/TILE_DIM,(d2[0]+1)/TILE_DIM);
+	dim3 blockSize = (bSize,bSize,bSize);
+	int nB[3];
+	for(i=0;i<3;i++)
+	  nB[i] = ceil(d2[i]/bSize);
+	dim3 gridDim =(nB[0],nB[1],nB[2]);
+	if(type_id(Type2) == type_float)
+	  transpose_210_fr<<<gridDim,blockSize,0>>>(tmp, out, d2[0],d2[1],d2[2]);
+	if(type_id(Type2) == type_double)
+	  transpose_210_dr<<<gridDim,blockSize,0>>>(tmp, out, d2[0],d2[1],d2[2]);
+	if(type_id(Type2) == type_complex)
+	  transpose_210_fc<<<gridDim,blockSize,0>>>(tmp, out, d2[0],d2[1],d2[2]);
+	if(type_id(Type2) == type_complex_double)
+	  transpose_210_dc<<<gridDim,blockSize,0>>>(tmp, out, d2[0],d2[1],d2[2]);
+	   /*    dim3 gridDim=((d2[1]+1)/TILE_DIM,(d2[0]+1)/TILE_DIM);
     dim3 blockSize=(TILE_DIM,TILE_DIM);
     //    ro120in_cu<Type2>(gridDim,blockSize,tmp,out,d2);
-    ro210in_cu(gridDim,blockSize,tmp,out,d2);
+    ro210in_cu(gridDim,blockSize,tmp,out,d2); */
 #endif
     if(!is_empty)
       cudaFree(tmp);
@@ -591,10 +635,23 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot201in(Type1 *
 #elif defined CUTT
   ro_cutt_in<Type2>(tmp,out,imc,d2);
 #else // do our own CUDA transpose
-    dim3 gridDim=((d2[1]+1)/TILE_DIM,(d2[0]+1)/TILE_DIM);
+	dim3 blockSize = (bSize,bSize,bSize);
+	int nB[3];
+	for(i=0;i<3;i++)
+	  nB[i] = ceil(d2[i]/bSize);
+	dim3 gridDim =(nB[0],nB[1],nB[2]);
+	if(type_id(Type2) == type_float)
+	  transpose_120_fr<<<gridDim,blockSize,0>>>(tmp, out, d2[0],d2[1],d2[2]);
+	if(type_id(Type2) == type_double)
+	  transpose_120_dr<<<gridDim,blockSize,0>>>(tmp, out, d2[0],d2[1],d2[2]);
+	if(type_id(Type2) == type_complex)
+	  transpose_120_fc<<<gridDim,blockSize,0>>>(tmp, out, d2[0],d2[1],d2[2]);
+	if(type_id(Type2) == type_complex_double)
+	  transpose_120_dc<<<gridDim,blockSize,0>>>(tmp, out, d2[0],d2[1],d2[2]);
+	   /*    dim3 gridDim=((d2[1]+1)/TILE_DIM,(d2[0]+1)/TILE_DIM);
     dim3 blockSize=(TILE_DIM,TILE_DIM);
     ro120in_cu<Type2>(gridDim,blockSize,tmp,out,d2);
-    ro201in_cu(gridDim,blockSize,tmp,out,d2);
+    ro201in_cu(gridDim,blockSize,tmp,out,d2); */
 #endif
     if(!is_empty)
       cudaFree(tmp);
@@ -820,9 +877,22 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot021_ip(Type1 
 #elif defined CUTT
     ro_cutt_out<Type1>(in,tmp,imc,d1);
 #else // do our own CUDA transpose
-    dim3 gridDim=((d1[0]+1)/TILE_DIM,(d1[2]+1)/TILE_DIM);
+	dim3 blockSize = (bSize,bSize,bSize);
+	int nB[3];
+	for(i=0;i<3;i++)
+	  nB[i] = ceil(d1[i]/bSize);
+	dim3 gridDim =(nB[0],nB[1],nB[2]);
+	if(type_id(Type1) == type_float)
+	  transpose_102_fr<<<gridDim,blockSize,0,streams[slice]>>>(in+offset1[slice],tmp, d1[0],d1[1],d1[2]);
+	if(type_id(Type1) == type_double)
+	  transpose_102_dr<<<gridDim,blockSize,0,streams[slice]>>>(in+offset1[slice],tmp,d1[0],d1[1],d1[2]);
+	if(type_id(Type1) == type_complex)
+	  transpose_102_fc<<<gridDim,blockSize,0,streams[slice]>>>(in+offset1[slice],tmp,d1[0],d1[1],d1[2]);
+	if(type_id(Type1) == type_complex_double)
+	  transpose_102_dc<<<gridDim,blockSize,0,streams[slice]>>>(in+offset1[slice],tmp, d1[0],d1[1],d1[2]);
+	   /*    dim3 gridDim=((d1[0]+1)/TILE_DIM,(d1[2]+1)/TILE_DIM);
     dim3 blockSize=(TILE_DIM,TILE_DIM);
-    ro102out_cu(gridDim,blockSize,in,tmp,d1);
+    ro102out_cu(gridDim,blockSize,in,tmp,d1); */
     //  rot102out_cu<<<gridDim,blockSize>>>(in,out,d1,d2,exec,plan);
 #endif
     if(!is_empty)
@@ -933,10 +1003,23 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot120out(Type1 
 #elif defined CUTT
     ro_cutt_out<Type1>(in,tmp,imc,d1);
 #else // do our own CUDA transpose
-    dim3 gridDim=((d1[0]+1)/TILE_DIM,(d1[2]+1)/TILE_DIM);
+	dim3 blockSize = (bSize,bSize,bSize);
+	int nB[3];
+	for(i=0;i<3;i++)
+	  nB[i] = ceil(d1[i]/bSize);
+	dim3 gridDim =(nB[0],nB[1],nB[2]);
+	if(type_id(Type1) == type_float)
+	  transpose_201_fr<<<gridDim,blockSize,0>>>(in,tmp, d1[0],d1[1],d1[2]);
+	if(type_id(Type1) == type_double)
+	  transpose_201_dr<<<gridDim,blockSize,0>>>(in,tmp, d1[0],d1[1],d1[2]);
+	if(type_id(Type1) == type_complex)
+	  transpose_201_fc<<<gridDim,blockSize,0>>>(in,tmp, d1[0],d1[1],d1[2]);
+	if(type_id(Type1) == type_complex_double)
+	  transpose_201_dc<<<gridDim,blockSize,0>>>(in,tmp, d1[0],d1[1],d1[2]);
+	   /*    dim3 gridDim=((d1[0]+1)/TILE_DIM,(d1[2]+1)/TILE_DIM);
     dim3 blockSize=(TILE_DIM,TILE_DIM);
   //  ro120in_cu<Type2>(gridDim,blockSize,tmp,out,d2);
-    ro120out_cu(gridDim,blockSize,in,tmp,d1);
+  ro120out_cu(gridDim,blockSize,in,tmp,d1); */
 #endif
 
     if(!is_empty) {    
@@ -1070,10 +1153,23 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot210out(Type1 
 #elif defined CUTT
     ro_cutt_out<Type1>(in,tmp,imc,d1);
 #else // do our own CUDA transpose
-    dim3 gridDim=((d1[0]+1)/TILE_DIM,(d1[2]+1)/TILE_DIM);
+	dim3 blockSize = (bSize,bSize,bSize);
+	int nB[3];
+	for(i=0;i<3;i++)
+	  nB[i] = ceil(d1[i]/bSize);
+	dim3 gridDim =(nB[0],nB[1],nB[2]);
+	if(type_id(Type1) == type_float)
+	  transpose_210_fr<<<gridDim,blockSize,0>>>(in,tmp, d1[0],d1[1],d1[2]);
+	if(type_id(Type1) == type_double)
+	  transpose_210_dr<<<gridDim,blockSize,0>>>(in,tmp, d1[0],d1[1],d1[2]);
+	if(type_id(Type1) == type_complex)
+	  transpose_210_fc<<<gridDim,blockSize,0>>>(in,tmp, d1[0],d1[1],d1[2]);
+	if(type_id(Type1) == type_complex_double)
+	   transpose_210_dc<<<gridDim,blockSize,0>>>(in,tmp, d1[0],d1[1],d1[2]);
+	   /*    dim3 gridDim=((d1[0]+1)/TILE_DIM,(d1[2]+1)/TILE_DIM);
     dim3 blockSize=(TILE_DIM,TILE_DIM);
     ro210out_cu(gridDim,blockSize,in,tmp,d1);
-    //  rot102out_cu<<<gridDim,blockSize>>>(in,out,d1,d2,exec,plan);
+    //  rot102out_cu<<<gridDim,blockSize>>>(in,out,d1,d2,exec,plan);*/
 #endif
     if(!is_empty) {
       (*(exec))(plan->libplan_out[nslices],tmp,out);
@@ -1150,10 +1246,23 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::rot201out(Type1 
 #elif defined CUTT
     ro_cutt_out<Type1>(in,tmp,imc,d1);
 #else // do our own CUDA transpose
-    dim3 gridDim=((d1[0]+1)/TILE_DIM,(d1[2]+1)/TILE_DIM);
+	dim3 blockSize = (bSize,bSize,bSize);
+	int nB[3];
+	for(i=0;i<3;i++)
+	  nB[i] = ceil(d1[i]/bSize);
+	dim3 gridDim =(nB[0],nB[1],nB[2]);
+	if(type_id(Type1) == type_float)
+	  transpose_120_fr<<<gridDim,blockSize,0>>>(in, tmp, d1[0],d1[1],d1[2]);
+	if(type_id(Type1) == type_double)
+	  transpose_120_dr<<<gridDim,blockSize,0>>>(in, tmp, d1[0],d1[1],d1[2]);
+	if(type_id(Type1) == type_complex)
+	  transpose_120_fc<<<gridDim,blockSize,0>>>(in, tmp, d1[0],d1[1],d1[2]);
+	if(type_id(Type1) == type_complex_double)
+	  transpose_120_dc<<<gridDim,blockSize,0>>>(in, tmp, d1[0],d1[1],d1[2]);
+	   /*    dim3 gridDim=((d1[0]+1)/TILE_DIM,(d1[2]+1)/TILE_DIM);
     dim3 blockSize=(TILE_DIM,TILE_DIM);
     ro210out_cu(gridDim,blockSize,in,tmp,d1);
-    //  rot102out_cu<<<gridDim,blockSize>>>(in,out,d1,d2,exec,plan);
+    //  rot102out_cu<<<gridDim,blockSize>>>(in,out,d1,d2,exec,plan); */
 #endif
     if(!is_empty) {
       (*(exec))(plan->libplan_out[nslices],tmp,out);
@@ -1236,7 +1345,15 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_out(Type
   
 #ifdef CUDA
   if(InLoc == LocDevice && OutLoc == LocDevice)
+#ifdef CUTENSOR
     ro_cutensor_in<Type2>(in,out,imc, d2, 0,1,0);
+#else
+  dim3 blockSize = (bSize,bSize,bSize);
+  int nB[3];
+  for(i=0;i<3;i++)
+    nB[i] = ceil(d1[i]/bSize);
+  dim3 gridDim =(nB[0],nB[1],nB[2]);
+#endif
   else     
 #endif
     {
@@ -1245,6 +1362,19 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_out(Type
   case 1:
     switch(imc[1]) {
     case 0: //1,0,2
+#ifdef CUDA  
+#ifndef CUTENSOR
+	if(type_id(Type1) == type_float)
+	  transpose_102_fr<<<gridDim,blockSize,0>>>(in, out, d1[0],d1[1],d1[2]);
+	if(type_id(Type1) == type_double)
+	  transpose_102_dr<<<gridDim,blockSize,0>>>(in, out, d1[0],d1[1],d1[2]);
+	if(type_id(Type1) == type_complex)
+	  transpose_102_fc<<<gridDim,blockSize,0>>>(in, out, d1[0],d1[1],d1[2]);
+	if(type_id(Type1) == type_complex_double)
+	  transpose_102_dc<<<gridDim,blockSize,0>>>(in, out, d1[0],d1[1],d1[2]);
+#endif
+#else
+
       for(k=0;k <d1[2];k++) {
 	pout1 = out + k*d1[0]*d1[1];
 	for(j=0;j < d1[1];j++) {
@@ -1255,10 +1385,23 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_out(Type
 	  }
 	}
       }
+#endif
       break;
 
     case 2: //1,2,0
 
+#ifdef CUDA  
+#ifndef CUTENSOR
+	if(type_id(Type1) == type_float)
+	  transpose_201_fr<<<gridDim,blockSize,0>>>(in, out, d1[0],d1[1],d1[2]);
+	if(type_id(Type1) == type_double)
+	  transpose_201_dr<<<gridDim,blockSize,0>>>(in, out, d1[0],d1[1],d1[2]);
+	if(type_id(Type1) == type_complex)
+	  transpose_201_fc<<<gridDim,blockSize,0>>>(in, out, d1[0],d1[1],d1[2]);
+	if(type_id(Type1) == type_complex_double)
+	  transpose_201_dc<<<gridDim,blockSize,0>>>(in, out, d1[0],d1[1],d1[2]);
+#endif
+#else
       if(d1[0]*d1[1] >0)	
 	nb32 = CACHE_BL / (sizeof(Type2)*d1[0]*d1[1]);
       else nb32 = 1;
@@ -1286,7 +1429,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_out(Type
 	  }
 	}
       }
-      
+#endif      
       break;
     }
     break;
@@ -1294,6 +1437,18 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_out(Type
   case 2:
     switch(imc[1]) {
     case 1: //2,1,0
+#ifdef CUDA  
+#ifndef CUTENSOR
+	if(type_id(Type1) == type_float)
+	  transpose_210_fr<<<gridDim,blockSize,0>>>(in, out, d1[0],d1[1],d1[2]);
+	if(type_id(Type1) == type_double)
+	  transpose_210_dr<<<gridDim,blockSize,0>>>(in, out, d1[0],d1[1],d1[2]);
+	if(type_id(Type1) == type_complex)
+	  transpose_210_fc<<<gridDim,blockSize,0>>>(in, out, d1[0],d1[1],d1[2]);
+	if(type_id(Type1) == type_complex_double)
+	  transpose_210_dc<<<gridDim,blockSize,0>>>(in, out, d1[0],d1[1],d1[2]);
+#endif
+#else
       if(d1[0]*d1[1] >0)	
 	nb31 = CACHE_BL / (sizeof(Type2)*d1[0]*d1[1]);
       else nb31 = 1;
@@ -1320,9 +1475,21 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_out(Type
 	  }
 	}
       }
-      
+#endif      
       break;
     case 0: //2,0,1
+#ifdef CUDA  
+#ifndef CUTENSOR 
+	if(type_id(Type1) == type_float)
+	  transpose_120_fr<<<gridDim,blockSize,0>>>(in, out, d1[0],d1[1],d1[2]);
+	if(type_id(Type1) == type_double)
+	  transpose_120_dr<<<gridDim,blockSize,0>>>(in, out, d1[0],d1[1],d1[2]);
+	if(type_id(Type1) == type_complex)
+	  transpose_120_fc<<<gridDim,blockSize,0>>>(in, out, d1[0],d1[1],d1[2]);
+	if(type_id(Type1) == type_complex_double)
+	  transpose_120_dc<<<gridDim,blockSize,0>>>(in, out, d1[0],d1[1],d1[2]);
+#endif
+#else
 
       if(d1[0]*d1[1] >0)	
 	nb31 = CACHE_BL / (sizeof(Type2)*d1[0]*d1[1]);
@@ -1353,11 +1520,24 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_out(Type
       
       break;
     }
-  
+#endif  
     break;
 
   case 0: //0,2,1
     if(imc[1] == 2) {
+
+#ifdef CUDA  
+#ifndef CUTENSOR
+	if(type_id(Type1) == type_float)
+	  transpose_021_fr<<<gridDim,blockSize,0>>>(in, out, d1[0],d1[1],d1[2]);
+	if(type_id(Type1) == type_double)
+	  transpose_021_dr<<<gridDim,blockSize,0>>>(in, out, d1[0],d1[1],d1[2]);
+	if(type_id(Type1) == type_complex)
+	  transpose_021_fc<<<gridDim,blockSize,0>>>(in, out, d1[0],d1[1],d1[2]);
+	if(type_id(Type1) == type_complex_double)
+	  transpose_021_dc<<<gridDim,blockSize,0>>>(in, out, d1[0],d1[1],d1[2]);
+#endif
+#else
       if(d1[0]*d1[1] >0)	
 	nb32 = CACHE_BL / (sizeof(Type2)*d1[0]*d1[1]);
       else nb32 = 1;
@@ -1391,6 +1571,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_out(Type
 	for(j=0;j < d1[1];j++)
 	  for(i=0;i < d1[0];i++)
 	    *out++ = *in++;
+#endif
     break;
   }
 
@@ -1424,10 +1605,18 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_out(Type
   rel_change(imo1,imo2,mc);
 
 #ifdef CUDA
+#ifdef CUTENSOR
   if(cmpmo(mc,102) || cmpmo(mc,201))
     ro_cutensor_in<Type2>(in,out,mc, d2, slice,nslices,streams[slice]);
   else if(slice == nslices-1)
     ro_cutensor_in<Type2>(in,out,mc, d2, 0,1,0);
+#else
+  dim3 blockSize = (bSize,bSize,bSize);
+  int nB[3];
+  for(i=0;i<3;i++)
+    nB[i] = ceil(d1[i]/bSize);
+  dim3 gridDim =(nB[0],nB[1],nB[2]);
+#endif
 #else
   
   pin =  in;
@@ -1435,6 +1624,18 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_out(Type
   case 1:
     switch(mc[1]) {
     case 0: //1,0,2
+#ifdef CUDA  
+#ifndef CUTENSOR
+	if(type_id(Type1) == type_float)
+	  transpose_102_fr<<<gridDim,blockSize,0,streams[slice]>>>(in+offset2[slice], out+offset2[slice], d1[0],d1[1],d1[2]);
+	if(type_id(Type1) == type_double)
+	  transpose_102_dr<<<gridDim,blockSize,0,streams[slice]>>>(in+offset2[slice], out+offset2[slice], d1[0],d1[1],d1[2]);
+	if(type_id(Type1) == type_complex)
+	  transpose_102_fc<<<gridDim,blockSize,0,streams[slice]>>>(in+offset2[slice], out+offset2[slice], d1[0],d1[1],d1[2]);
+	if(type_id(Type1) == type_complex_double)
+	  transpose_102_dc<<<gridDim,blockSize,0,streams[slice]>>>(in+offset2[slice], out+offset2[slice], d1[0],d1[1],d1[2]);
+#endif
+#else
       int kst = offset1[slice]/(d1[0]*d1[1]);
       int kend = kst + mysize1[slice]/(d1[0]*d1[1]); 
       for(k=kst;k < ken;k++) {
@@ -1447,10 +1648,23 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_out(Type
 	  }
 	}
       }
+#endif
       break;
 
     case 2: //1,2,0
 
+#ifdef CUDA  
+#ifndef CUTENSOR
+	if(type_id(Type1) == type_float)
+	  transpose_201_fr<<<gridDim,blockSize,0,streams[slice]>>>(in+offset2[slice], out+offset2[slice], d1[0],d1[1],d1[2]);
+	if(type_id(Type1) == type_double)
+	  transpose_201_dr<<<gridDim,blockSize,0,streams[slice]>>>(in+offset2[slice], out+offset2[slice], d1[0],d1[1],d1[2]);
+	if(type_id(Type1) == type_complex)
+	  transpose_201_fc<<<gridDim,blockSize,0,streams[slice]>>>(in+offset2[slice], out+offset2[slice], d1[0],d1[1],d1[2]);
+        if(type_id(Type1) == type_complex_double)
+	  transpose_201_dc<<<gridDim,blockSize,0,streams[slice]>>>(in+offset2[slice], out+offset2[slice], d1[0],d1[1],d1[2]);
+#endif
+#else
       if(d1[0]*d1[1] >0)	
 	nb32 = CACHE_BL / (sizeof(Type2)*d1[0]*d1[1]);
       else nb32 = 1;
@@ -1481,7 +1695,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_out(Type
 	  }
 	}
       }
-      
+#endif      
       break;
     }
     break;
@@ -1489,6 +1703,18 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_out(Type
   case 2:
     switch(mc[1]) {
     case 1: //2,1,0
+#ifdef CUDA  
+#ifndef CUTENSOR
+	if(type_id(Type1) == type_float)
+	  transpose_210_fr<<<gridDim,blockSize,0,streams[slice]>>>(in+offset2[slice], out+offset2[slice], d1[0],d1[1],d1[2]);
+	if(type_id(Type1) == type_double)
+	  transpose_210_dr<<<gridDim,blockSize,0,streams[slice]>>>(in+offset2[slice], out+offset2[slice], d1[0],d1[1],d1[2]);
+	if(type_id(Type1) == type_complex)
+	  transpose_210_fc<<<gridDim,blockSize,0,streams[slice]>>>(in+offset2[slice], out+offset2[slice], d1[0],d1[1],d1[2]);
+	if(type_id(Type1) == type_complex_double)
+	  transpose_210_dc<<<gridDim,blockSize,0,streams[slice]>>>(in+offset2[slice], out+offset2[slice], d1[0],d1[1],d1[2]);
+#endif
+#else
       if(d1[0]*d1[1] >0)	
 	nb31 = CACHE_BL / (sizeof(Type2)*d1[0]*d1[1]);
       else nb31 = 1;
@@ -1518,9 +1744,21 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_out(Type
 	  }
 	}
       }
-      
+#endif      
       break;
     case 0: //2,0,1
+#ifdef CUDA  
+#ifndef CUTENSOR
+	if(type_id(Type1) == type_float)
+	  transpose_120_fr<<<gridDim,blockSize,0,streams[slice]>>>(in+offset2[slice], out+offset2[slice], d1[0],d1[1],d1[2]);
+	if(type_id(Type1) == type_double)
+	  transpose_120_dr<<<gridDim,blockSize,0,streams[slice]>>>(in+offset2[slice], out+offset2[slice], d1[0],d1[1],d1[2]);
+	if(type_id(Type1) == type_complex)
+	  transpose_120_fc<<<gridDim,blockSize,0,streams[slice]>>>(in+offset2[slice], out+offset2[slice], d1[0],d1[1],d1[2]);
+	if(type_id(Type1) == type_complex_double)
+	  transpose_120_dc<<<gridDim,blockSize,0,streams[slice]>>>(in+offset2[slice], out+offset2[slice], d1[0],d1[1],d1[2]);
+#endif
+#else
 
       if(d1[0]*d1[1] >0)	
 	nb31 = CACHE_BL / (sizeof(Type2)*d1[0]*d1[1]);
@@ -1548,7 +1786,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_out(Type
 	  }
 	}
       }
-      
+#endif      
       break;
     }
   
@@ -1556,6 +1794,18 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_out(Type
 
   case 0: //0,2,1
     if(mc[1] == 2) {
+#ifdef CUDA  
+#ifndef CUTENSOR
+	if(type_id(Type1) == type_float)
+	  transpose_021_fr<<<gridDim,blockSize,0,streams[slice]>>>(in+offset2[slice], out+offset2[slice], d1[0],d1[1],d1[2]);
+	if(type_id(Type1) == type_double)
+	  transpose_021_dr<<<gridDim,blockSize,0,streams[slice]>>>(in+offset2[slice], out+offset2[slice], d1[0],d1[1],d1[2]);
+	if(type_id(Type1) == type_complex)
+	  transpose_021_fc<<<gridDim,blockSize,0,streams[slice]>>>(in+offset2[slice], out+offset2[slice], d1[0],d1[1],d1[2]);
+	if(type_id(Type1) == type_complex_double)
+	  transpose_021_dc<<<gridDim,blockSize,0,streams[slice]>>>(in+offset2[slice], out+offset2[slice], d1[0],d1[1],d1[2]);
+#endif
+#else
       if(d1[0]*d1[1] >0)	
 	nb32 = CACHE_BL / (sizeof(Type2)*d1[0]*d1[1]);
       else nb32 = 1;
@@ -1589,6 +1839,7 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::reorder_out(Type
 	for(j=0;j < d1[1];j++)
 	  for(i=0;i < d1[0];i++)
 	    *out++ = *in++;
+#endif
     break;
   }
 

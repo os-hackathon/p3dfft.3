@@ -922,6 +922,11 @@ template <class Type1,class Type2> void transplan<Type1,Type2>::init_tr(const Da
   trans_dim = d; 
   trans_type = (trans_type1D<Type1,Type2> *) type;
 
+#ifdef CUDA
+  cudaEventCreate(&EVENT_H2D);
+  cudaEventCreate(&EVENT_D2H);
+  cudaEventCreate(&EVENT_EXEC);
+#endif
 
   dt1 = type->dt1;
   dt2 = type->dt2;
@@ -1124,10 +1129,6 @@ template <class Type1,class Type2> trans_MPIplan<Type1,Type2>::trans_MPIplan(con
 #ifdef CUDA
   // Make sure data is on host after transplan, no matter where we started
   trplan = new transplan<Type1,Type2>(gr1,intergrid,type,d,InLoc,LocHost); 
-  offset1 = trplan->offset1;
-  offset2 = trplan->offset2;
-  mysize1 = trplan->mysize1;
-  mysize2 = trplan->mysize2;
 #else
   trplan = new transplan<Type1,Type2>(gr1,intergrid,type,d); //,inplace_);
 #endif

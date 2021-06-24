@@ -107,8 +107,6 @@ const int DEF_FFT_FLAGS=FFTW_PATIENT;
 #include <cuda_runtime.h>
 #include <cufft.h>
 #include <cufftXt.h>
-#include <helper_cuda.h>
-#include <helper_functions.h>
 #include <device_launch_parameters.h>
 #include <cuComplex.h>
 #include <curand_mtgp32_kernel.h>
@@ -213,6 +211,11 @@ extern int P3DFFT_DCT4_REAL_S,P3DFFT_DCT4_REAL_D,P3DFFT_DST4_REAL_S,P3DFFT_DST4_
 #include <vector>
 #include <typeinfo>
 #include <complex>
+
+#ifdef CUDA
+#include <helper_cuda.h>
+#include <helper_functions.h>
+#endif
 
 #ifdef MKL_BLAS
 #define MKL_Complex8 mycomplex
@@ -740,28 +743,15 @@ class stage {
   //  bool is_set;
   //  bool is_trans = false;
   //bool is_mpi = false;
-  stage *next;
+  stage *next=NULL;
   int kind;
   void myexec(char *in,char *out,bool OW);
   void myexec_deriv(char *in,char *out, bool OW);
 
   int InLoc=LocHost;
   int OutLoc=LocHost;
-#ifdef CUDA
-  //  bool useCuda=false;
-  cudaEvent_t EVENT_EXEC,EVENT_H2D,EVENT_D2H;
-  int *offset1,*mysize1;
-  int *offset2,*mysize2;
-#endif
-  stage() {
-    next = NULL;
-#ifdef CUDA
-    cudaEventCreate(&EVENT_H2D);
-    cudaEventCreate(&EVENT_D2H);
-    cudaEventCreate(&EVENT_EXEC);
-#endif
-  }
-    virtual ~stage() {}
+  stage() {}
+  virtual ~stage() {}
 
 };
 
@@ -815,6 +805,13 @@ template <class Type1,class Type2>   class transplan : public stage {
   char *DevBuf,*DevBuf2;
 
   public :
+
+#ifdef CUDA
+  //  bool useCuda=false;
+  cudaEvent_t EVENT_EXEC,EVENT_H2D,EVENT_D2H;
+  int *offset1,*mysize1;
+  int *offset2,*mysize2;
+#endif
 
   bool is_empty=false;
   int trans_dim;  // Rank of dimension of the transform
@@ -907,6 +904,7 @@ template <class Type1,class Type2>   class trans_MPIplan : public stage {
   trans_MPIplan(const DataGrid &gr1,const DataGrid &intergrid,const DataGrid &gr2,int d1,int d2,const gen_trans_type *type,int trans_dim_,int InLoc_); //,bool inplace_);
   ~trans_MPIplan() {};
 #ifdef CUDA
+  int InLoc = LocHost;
   void exec(char *in,char *out,  int dim_deriv,event_t *event_hold,char *devbuf=NULL,bool OW=false);
 #else
   void exec(char *in,char *out,  int dim_deriv,bool OW=false);
