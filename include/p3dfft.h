@@ -1243,6 +1243,7 @@ template class trans_type1D<complex_double,complex_double>;
     double packsend_deriv;
     double unpackrecv;
     double alltoall;
+    double gpu_transfer;
   public:
     void init();
     void print(MPI_Comm);
