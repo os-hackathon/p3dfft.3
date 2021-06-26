@@ -116,15 +116,14 @@ const int DEF_FFT_FLAGS=FFTW_PATIENT;
 #include <cutt.h>
 #endif
 
-const int DEF_FFT_FLAGS=0;
-#define LocDevice 1
-#define LocHost 2
 
 #elif __HIP_ROCclr__
 
+
 #include <hip/hip_runtime.h>
-#include <hip_blas.h>
-#include <hipComplex.h>
+#include <hipblas.h>
+#include <hip/hip_complex.h>
+#include <hipfft.h>
 
 #define cudaStream_t hipStream_t
 #define cudaEvent_t hipEvent_t
@@ -142,6 +141,8 @@ const int DEF_FFT_FLAGS=0;
 #define cudaMemcpyDeviceToHost hipMemcpyDeviceToHost
 
 // CUFFT -> HIPFFT
+#define cufftHandle hipfftHandle
+#define cufftResult hipfftResult
 #define cufftType hipfftType
 #define cufftDestroy hipfftDestroy
 #define cufftPlanMany hipfftPlanMany
@@ -156,6 +157,15 @@ const int DEF_FFT_FLAGS=0;
 #define cufftDoubleReal hipfftDoubleReal
 #define cufftDoubleComplex hipfftDoubleComplex
 #define cufftSetStream hipfftSetStream
+#define CUFFT_FORWARD HIPFFT_FORWARD
+#define CUFFT_INVERSE HIPFFT_BACKWARD
+#define CUFFT_Z2Z HIPFFT_Z2Z
+#define CUFFT_D2Z HIPFFT_D2Z
+#define CUFFT_Z2D HIPFFT_Z2D
+#define CUFFT_C2C HIPFFT_C2C
+#define CUFFT_C2R HIPFFT_C2R
+#define CUFFT_R2C HIPFFT_R2C
+#define CUFFT_SUCCESS HIPFFT_SUCCESS
 
 // CUBLAS -> HIPBLAS
 #define cublasHandle_t hipblasHandle_t
@@ -170,6 +180,11 @@ const int DEF_FFT_FLAGS=0;
 #define cuComplex hipComplex
 #define cuDoubleComplex hipDoubleComplex
 
+
+//#define checkCudaErrors(val) check((val), #val, __FILE__, __LINE__)
+#define checkCudaErrors(val)
+
+#define CUDA
 
 #endif
 
@@ -212,7 +227,7 @@ extern int P3DFFT_DCT4_REAL_S,P3DFFT_DCT4_REAL_D,P3DFFT_DST4_REAL_S,P3DFFT_DST4_
 #include <typeinfo>
 #include <complex>
 
-#ifdef CUDA
+#if defined CUDA && !defined __HIP_ROCclr__
 #include <helper_cuda.h>
 #include <helper_functions.h>
 #endif
@@ -259,6 +274,9 @@ typedef fftwf_plan lib_plan_type;
  extern const int TILE_DIM;
  extern cudaStream_t *streams;
  typedef cudaEvent_t event_t;
+#define LocDevice 1
+#define LocHost 2
+const int DEF_FFT_FLAGS=0;
 #endif
 
 #ifndef CUDA

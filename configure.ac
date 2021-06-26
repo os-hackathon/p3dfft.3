@@ -107,8 +107,8 @@ if test "$fftwval" = "yes"; then
 fi
 AC_MSG_RESULT([$fftwval])
 
-AC_MSG_CHECKING([whether to use CUDA library])
-AC_ARG_ENABLE(cuda, [AC_HELP_STRING([--enable-cuda], [for using the CUDA library])], cudaval=$enableval, cudaval=no)
+AC_MSG_CHECKING([whether to use CUDA])
+AC_ARG_ENABLE(cuda, [AC_HELP_STRING([--enable-cuda], [for using the CUDA])], cudaval=$enableval, cudaval=no)
 if test "$cudaval" = "yes"; then
 	if test "$fourlib" = ""; then fourlib="cuda"
 	else AC_MSG_ERROR([Only choose one Fourier transform library!])
@@ -119,6 +119,21 @@ else
 	AM_CONDITIONAL([ENABLE_CUDA], [false])
 fi
 AC_MSG_RESULT([$cudaval])
+
+AC_MSG_CHECKING([whether to use HIP])
+AC_ARG_ENABLE(hip, [AC_HELP_STRING([--enable-hip], [for using the HIP/ROC])], hipval=$enableval, hipval=no)
+if test "$hipval" = "yes"; then
+	if test "$fourlib" = ""; then fourlib="hip"
+	else AC_MSG_ERROR([Only choose one Fourier transform library!])
+	fi
+	AC_DEFINE(__HIP_ROCclr__, 1, [Define if you want to use the CUDA library])
+	AM_CONDITIONAL([ENABLE_HIP], [true])
+#	HIP_INC="-I/opt/rocm/include -O/opt/rocm/hipfft/include"
+
+else
+	AM_CONDITIONAL([ENABLE_HIP], [false])
+fi
+AC_MSG_RESULT([$hipval])
 
 AC_MSG_CHECKING([whether to use cuBLAS library])
 AC_ARG_ENABLE(cublas, [AC_HELP_STRING([--enable-cublas], [for using the cuBLAS library])], cublasval=$enableval, cublasval=no)
@@ -251,6 +266,26 @@ AS_IF([test "$fourlib" = "fftw"],
               if test "$fftwval" = "yes"; then AC_MSG_ERROR([location to FFTW library directory was not given!])
               fi])])
 
+
+AC_MSG_CHECKING([HIP directory])
+AC_ARG_WITH(hip, [AC_HELP_STRING([--with-hip], [path to location of HIP library])], withhip=$withval, withhip="")
+if test "withhip" != "yes" && test "$withhip" != "" && test "$withhip" != "no"; then
+	if test "$fourlib" != "hip"; then AC_MSG_ERROR([Only choose one Fourier transform library!])
+	fi
+
+	AC_MSG_RESULT([$withhip])
+	if [[ -d "$withhip/hipfft/include"  ]]; then
+#		CUDA_LIB="-L$withcuda/lib64 -lcuda -lcufft"
+		HIP_INC="-I$withhip/hip/include -I$withhip/hipfft/include"
+	else
+		AC_MSG_ERROR([hip library was not found in given location!])
+	fi
+
+	AC_SUBST(HIP_INC, "$HIP_INC")
+
+fi
+
+
 AC_MSG_CHECKING([CUDA directory])
 AC_ARG_WITH(cuda, [AC_HELP_STRING([--with-cuda], [path to location of CUDA library])], withcuda=$withval, withcuda="")
 if test "withcuda" != "yes" && test "$withcuda" != "" && test "$withcuda" != "no"; then
@@ -264,7 +299,6 @@ if test "withcuda" != "yes" && test "$withcuda" != "" && test "$withcuda" != "no
 	else
 		AC_MSG_ERROR([cuda library was not found in given location!])
 	fi
-
 	if test "$cublasval" = "yes"; then
 		CUDA_LIB+=" -lcublas"
 	fi
@@ -346,7 +380,7 @@ fi
 
 # check to see if essl or ESSL or MKL has been selected
 if test "$fourlib" = ""; then
-	AC_MSG_ERROR([You must choose to use either ESSL or FFTW or MKL or CUDA!])
+	AC_MSG_ERROR([You must choose to use either ESSL or FFTW or MKL or CUDA or HIP!])
 fi
 
 

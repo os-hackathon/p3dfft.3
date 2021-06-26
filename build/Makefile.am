@@ -1,4 +1,4 @@
-AM_CXXFLAGS = -I$(top_builddir)/include $(FFTW_INC) $(ESSL_INC) $(CUDA_INC) --std=c++11
+AM_CXXFLAGS = -I$(top_builddir)/include $(FFTW_INC) $(ESSL_INC) $(CUDA_INC) $(HIP_INC) --std=c++11
 
 ARFLAGS = -v -r -u
 
@@ -14,10 +14,14 @@ endif
 if ENABLE_CUTT
 DEFS += -DCUTT
 endif
+else 
+if ENABLE_HIP
+DEFS += -x cu -D__HIP_ROCclr__             
+LINKER = hipcc
 else
-LINKER = $(CXX_save)
+LINKER=$(CXX_save)
 endif
-
+endif
 CXX = $(LINKER)
 
 
@@ -44,11 +48,11 @@ clean-local:
 
 sources = $(libp3dfft_3_a_SOURCES)
 
-.C.d:
-	@set -e;
-	rm -f $@;
-	$(CXXCOMPILE) -MM $< > $@.temporary;
-	sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.temporary > $@;
-	rm -f $@.temporary;
-
--include $(sources:.C=.d)
+#.C.d:
+#	@set -e;
+#	rm -f $@;
+#	$(CXXCOMPILE) -MM $< > $@.temporary;
+#	sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.temporary > $@;
+#	rm -f $@.temporary;
+#
+#-include $(sources:.C=.d)

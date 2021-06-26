@@ -80,6 +80,7 @@ POST_UNINSTALL = :
 @ENABLE_CUBLAS_TRUE@@ENABLE_CUDA_TRUE@am__append_2 = -DCUBLAS
 @ENABLE_CUDA_TRUE@@ENABLE_CUTENSOR_TRUE@am__append_3 = -DCUTENSOR
 @ENABLE_CUDA_TRUE@@ENABLE_CUTT_TRUE@am__append_4 = -DCUTT
+@ENABLE_CUDA_FALSE@@ENABLE_HIP_TRUE@am__append_5 = -x cu -D__HIP_ROCclr__             
 subdir = build
 DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -126,7 +127,8 @@ am__v_AR_1 =
 libp3dfft_3_a_AR = $(AR) $(ARFLAGS)
 libp3dfft_3_a_LIBADD =
 am_libp3dfft_3_a_OBJECTS = init.$(OBJEXT) exec.$(OBJEXT) \
-	templ.$(OBJEXT) wrap.$(OBJEXT) fwrap.$(OBJEXT) fp3dfft++mod.$(OBJEXT)
+	templ.$(OBJEXT) wrap.$(OBJEXT) fwrap.$(OBJEXT) \
+	fp3dfft++mod.$(OBJEXT)
 libp3dfft_3_a_OBJECTS = $(am_libp3dfft_3_a_OBJECTS)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
@@ -143,7 +145,6 @@ am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp =
 am__depfiles_maybe =
-FCOMPILE = $(FC)
 CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
 AM_V_CXX = $(am__v_CXX_@AM_V@)
@@ -157,6 +158,30 @@ AM_V_CXXLD = $(am__v_CXXLD_@AM_V@)
 am__v_CXXLD_ = $(am__v_CXXLD_@AM_DEFAULT_V@)
 am__v_CXXLD_0 = @echo "  CXXLD   " $@;
 am__v_CXXLD_1 = 
+FCCOMPILE = $(FC) $(AM_FCFLAGS) $(FCFLAGS)
+AM_V_FC = $(am__v_FC_@AM_V@)
+am__v_FC_ = $(am__v_FC_@AM_DEFAULT_V@)
+am__v_FC_0 = @echo "  FC      " $@;
+am__v_FC_1 = 
+FCLD = $(FC)
+FCLINK = $(FCLD) $(AM_FCFLAGS) $(FCFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o \
+	$@
+AM_V_FCLD = $(am__v_FCLD_@AM_V@)
+am__v_FCLD_ = $(am__v_FCLD_@AM_DEFAULT_V@)
+am__v_FCLD_0 = @echo "  FCLD    " $@;
+am__v_FCLD_1 = 
+COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
+	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
+AM_V_CC = $(am__v_CC_@AM_V@)
+am__v_CC_ = $(am__v_CC_@AM_DEFAULT_V@)
+am__v_CC_0 = @echo "  CC      " $@;
+am__v_CC_1 = 
+CCLD = $(CC)
+LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
+AM_V_CCLD = $(am__v_CCLD_@AM_V@)
+am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
+am__v_CCLD_0 = @echo "  CCLD    " $@;
+am__v_CCLD_1 = 
 SOURCES = $(libp3dfft_3_a_SOURCES)
 DIST_SOURCES = $(libp3dfft_3_a_SOURCES)
 am__can_run_installinfo = \
@@ -203,7 +228,7 @@ CXXFLAGS = @CXXFLAGS@
 CXX_save = @CXX_save@
 CYGPATH_W = @CYGPATH_W@
 DEFS = @DEFS@ $(am__append_1) $(am__append_2) $(am__append_3) \
-	$(am__append_4)
+	$(am__append_4) $(am__append_5)
 ECHO_C = @ECHO_C@
 ECHO_N = @ECHO_N@
 ECHO_T = @ECHO_T@
@@ -213,12 +238,14 @@ ESSL_LIB = @ESSL_LIB@
 EXEEXT = @EXEEXT@
 FC = @FC@
 FCFLAGS = @FCFLAGS@
+FC_save = @FC_save@
 FFTWF_LIB = @FFTWF_LIB@
 FFTW_INC = @FFTW_INC@
 FFTW_LIB = @FFTW_LIB@
 GIT_DATE = @GIT_DATE@
 GIT_VERSION = @GIT_VERSION@
 GREP = @GREP@
+HIP_INC = @HIP_INC@
 INSTALL = @INSTALL@
 INSTALL_DATA = @INSTALL_DATA@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
@@ -290,11 +317,11 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-AM_CXXFLAGS = -I$(top_builddir)/include $(FFTW_INC) $(ESSL_INC) $(CUDA_INC) --std=c++11
+AM_CXXFLAGS = -I$(top_builddir)/include $(FFTW_INC) $(ESSL_INC) $(CUDA_INC) $(HIP_INC) --std=c++11
 ARFLAGS = -v -r -u
-@ENABLE_CUDA_FALSE@LINKER = $(CXX_save)
+@ENABLE_CUDA_FALSE@@ENABLE_HIP_FALSE@LINKER = $(CXX_save)
+@ENABLE_CUDA_FALSE@@ENABLE_HIP_TRUE@LINKER = hipcc
 @ENABLE_CUDA_TRUE@LINKER = nvcc
-
 
 #deriv.o: $(top_builddir)/include/p3dfft.h
 lib_LIBRARIES = libp3dfft.3.a
@@ -304,8 +331,7 @@ sources = $(libp3dfft_3_a_SOURCES)
 all: all-am
 
 .SUFFIXES:
-.SUFFIXES: .C .o .obj
-.SUFFIXES: .f90 .o .obj
+.SUFFIXES: .C .f90 .o .obj
 $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
@@ -384,8 +410,12 @@ distclean-compile:
 
 .C.obj:
 	$(AM_V_CXX)$(CXXCOMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
+
 .f90.o:
-	$(AM_V_FC)$(FCOMPILE) -c -o $@ $<
+	$(AM_V_FC)$(FCCOMPILE) -c -o $@ $<
+
+.f90.obj:
+	$(AM_V_FC)$(FCCOMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
 
 ID: $(am__tagged_files)
 	$(am__define_uniq_tagged_files); mkid -fID $$unique
@@ -594,15 +624,11 @@ uninstall-am: uninstall-libLIBRARIES
 
 init.o: $(top_builddir)/include/p3dfft.h
 
-wrap.o: $(top_builddir)/include/p3dfft.h
-
 exec.o: $(top_builddir)/include/p3dfft.h reorder.C
 
 templ.o: $(top_builddir)/include/p3dfft.h
 
 wrap.o: $(top_builddir)/include/p3dfft.h
-
-fwrap.o: fp3dfft++mod.o
 
 clean-local:
 	-[ -z "*.mod" ] || rm -f *.mod

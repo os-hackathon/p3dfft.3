@@ -641,6 +641,7 @@ ESSL_LIB
 ESSL_INC
 CUDA_INC
 CUDA_LIB
+HIP_INC
 FFTW_INC
 EGREP
 GREP
@@ -660,10 +661,12 @@ ENABLE_CUTENSOR_FALSE
 ENABLE_CUTENSOR_TRUE
 ENABLE_CUBLAS_FALSE
 ENABLE_CUBLAS_TRUE
+ENABLE_HIP_FALSE
+ENABLE_HIP_TRUE
 ENABLE_CUDA_FALSE
 ENABLE_CUDA_TRUE
-CXX_save
 FC_save
+CXX_save
 GIT_VERSION
 GIT_DATE
 MAINT
@@ -747,6 +750,7 @@ enable_gnu
 enable_timers
 enable_fftw
 enable_cuda
+enable_hip
 enable_cublas
 enable_cutensor
 enable_cutt
@@ -756,6 +760,7 @@ with_fftw
 enable_fftwmeasure
 enable_fftwestimate
 enable_fftwpatient
+with_hip
 with_cuda
 with_cutensor
 with_cutensor_lib
@@ -1403,7 +1408,8 @@ Optional Features:
   --enable-gnu            compile P3DFFT using GNU compiler
   --enable-timers         for using timers (DEBUGGING PURPOSES ONLY)
   --enable-fftw           for using the FFTW library
-  --enable-cuda           for using the CUDA library
+  --enable-cuda           for using the CUDA
+  --enable-hip            for using the HIP/ROC
   --enable-cublas         for using the cuBLAS library
   --enable-cutensor       for using the cuTensor library
   --enable-cutt           for using the cuTT library
@@ -1417,6 +1423,7 @@ Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
   --with-fftw             path to location of FFTW directory
+  --with-hip              path to location of HIP library
   --with-cuda             path to location of CUDA library
   --with-cutensor         path to location of cuTensor library
   --with-cutensor-lib     path to location of cuTensor lib directory
@@ -3079,6 +3086,7 @@ if test "$FC" = ''; then
 fi
 
 CXX_save="$CXX_save"
+
 FC_save="$FC_save"
 
 fourlib=""
@@ -3119,8 +3127,8 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $fftwval" >&5
 $as_echo "$fftwval" >&6; }
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to use CUDA library" >&5
-$as_echo_n "checking whether to use CUDA library... " >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to use CUDA" >&5
+$as_echo_n "checking whether to use CUDA... " >&6; }
 # Check whether --enable-cuda was given.
 if test "${enable_cuda+set}" = set; then :
   enableval=$enable_cuda; cudaval=$enableval
@@ -3155,6 +3163,45 @@ fi
 fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $cudaval" >&5
 $as_echo "$cudaval" >&6; }
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to use HIP" >&5
+$as_echo_n "checking whether to use HIP... " >&6; }
+# Check whether --enable-hip was given.
+if test "${enable_hip+set}" = set; then :
+  enableval=$enable_hip; hipval=$enableval
+else
+  hipval=no
+fi
+
+if test "$hipval" = "yes"; then
+	if test "$fourlib" = ""; then fourlib="hip"
+	else as_fn_error $? "Only choose one Fourier transform library!" "$LINENO" 5
+	fi
+
+$as_echo "#define __HIP_ROCclr__ 1" >>confdefs.h
+
+	 if true; then
+  ENABLE_HIP_TRUE=
+  ENABLE_HIP_FALSE='#'
+else
+  ENABLE_HIP_TRUE='#'
+  ENABLE_HIP_FALSE=
+fi
+
+#	HIP_INC="-I/opt/rocm/include -O/opt/rocm/hipfft/include"
+
+else
+	 if false; then
+  ENABLE_HIP_TRUE=
+  ENABLE_HIP_FALSE='#'
+else
+  ENABLE_HIP_TRUE='#'
+  ENABLE_HIP_FALSE=
+fi
+
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $hipval" >&5
+$as_echo "$hipval" >&6; }
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to use cuBLAS library" >&5
 $as_echo_n "checking whether to use cuBLAS library... " >&6; }
@@ -4736,6 +4783,36 @@ $as_echo "none" >&6; }
 fi
 fi
 
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking HIP directory" >&5
+$as_echo_n "checking HIP directory... " >&6; }
+
+# Check whether --with-hip was given.
+if test "${with_hip+set}" = set; then :
+  withval=$with_hip; withhip=$withval
+else
+  withhip=""
+fi
+
+if test "withhip" != "yes" && test "$withhip" != "" && test "$withhip" != "no"; then
+	if test "$fourlib" != "hip"; then as_fn_error $? "Only choose one Fourier transform library!" "$LINENO" 5
+	fi
+
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $withhip" >&5
+$as_echo "$withhip" >&6; }
+	if [ -d "$withhip/hipfft/include"  ]; then
+#		CUDA_LIB="-L$withcuda/lib64 -lcuda -lcufft"
+		HIP_INC="-I$withhip/hip/include -I$withhip/hipfft/include"
+	else
+		as_fn_error $? "hip library was not found in given location!" "$LINENO" 5
+	fi
+
+	HIP_INC="$HIP_INC"
+
+
+fi
+
+
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking CUDA directory" >&5
 $as_echo_n "checking CUDA directory... " >&6; }
 
@@ -4758,7 +4835,6 @@ $as_echo "$withcuda" >&6; }
 	else
 		as_fn_error $? "cuda library was not found in given location!" "$LINENO" 5
 	fi
-
 	if test "$cublasval" = "yes"; then
 		CUDA_LIB+=" -lcublas"
 	fi
@@ -4776,7 +4852,7 @@ fi
 
 		if test "withcutensor" != "yes" && test "$withcutensor" != "" && test "$withcutensor" != "no"; then
 			CUDA_INC+=" -I$withcutensor/include"
-			CUDA_LIB=" -L$withcutensor/lib"
+#			CUDA_LIB=" -L$withcutensor/lib"
 		fi
 
 # Check whether --with-cutensor-lib was given.
@@ -4888,7 +4964,7 @@ fi
 
 # check to see if essl or ESSL or MKL has been selected
 if test "$fourlib" = ""; then
-	as_fn_error $? "You must choose to use either ESSL or FFTW or MKL or CUDA!" "$LINENO" 5
+	as_fn_error $? "You must choose to use either ESSL or FFTW or MKL or CUDA or HIP!" "$LINENO" 5
 fi
 
 
@@ -6696,6 +6772,14 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${ENABLE_CUDA_TRUE}" && test -z "${ENABLE_CUDA_FALSE}"; then
   as_fn_error $? "conditional \"ENABLE_CUDA\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${ENABLE_HIP_TRUE}" && test -z "${ENABLE_HIP_FALSE}"; then
+  as_fn_error $? "conditional \"ENABLE_HIP\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${ENABLE_HIP_TRUE}" && test -z "${ENABLE_HIP_FALSE}"; then
+  as_fn_error $? "conditional \"ENABLE_HIP\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${ENABLE_CUBLAS_TRUE}" && test -z "${ENABLE_CUBLAS_FALSE}"; then

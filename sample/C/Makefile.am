@@ -6,8 +6,12 @@ if ENABLE_CUDA
 CCLD = nvcc
 AM_CPPFLAGS += -DCUDA
 AM_LDFLAGS = --std=c++11 -ccbin $(CXX_save)
+else 
+if ENABLE_HIP
+CCLD = hipcc
 else
 CCLD = $(CXX)
+endif
 endif
 
 csampledir = $(datadir)/p3dfft++_samples/
